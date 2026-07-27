@@ -2,8 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  buildShadowrocketConfig,
-  buildV2rayRouting,
+  buildV2rayBasic,
+  buildV2rayGeo,
+  buildV2rayNonRu,
   meaningfulLines,
   parseRule,
   toShadowrocketRule,
@@ -28,50 +29,37 @@ test("преобразует правила Shadowrocket в значения v2r
   assert.deepEqual(parseRule("IP-CIDR,192.0.2.0/24,no-resolve"), {
     ip: "192.0.2.0/24",
   });
+  assert.deepEqual(parseRule("DOMAIN-SUFFIX,рф"), {
+    domain: "domain:xn--p1ai",
+  });
 });
 
-test("добавляет политику Shadowrocket перед дополнительными параметрами", () => {
+test("добавляет политику перед параметром no-resolve", () => {
   assert.equal(
     toShadowrocketRule("IP-CIDR,192.0.2.0/24,no-resolve", "DIRECT"),
     "IP-CIDR,192.0.2.0/24,DIRECT,no-resolve",
   );
 });
 
-test("встраивает личные правила и собственный update-url", () => {
-  const base = [
-    "[General]",
-    "include = sr_ru_extended.conf",
-    "update-url = https://example.com/upstream.conf",
-    "[Rule]",
-    "DOMAIN-SUFFIX,upstream.example,PROXY",
-    "FINAL,DIRECT",
-  ].join("\n");
-  const result = buildShadowrocketConfig(
-    base,
-    ["DOMAIN-SUFFIX,direct.example"],
-    ["DOMAIN-SUFFIX,proxy.example"],
-  );
-
-  assert.doesNotMatch(result, /^include\s*=/m);
-  assert.match(
-    result,
-    /update-url = https:\/\/raw\.githubusercontent\.com\/qleager\/proxy-routing-config\/main\/dist\/shadowrocket\.conf/,
-  );
-  assert.ok(
-    result.indexOf("DOMAIN-SUFFIX,direct.example,DIRECT") <
-      result.indexOf("DOMAIN-SUFFIX,upstream.example,PROXY"),
-  );
-});
-
-test("v2rayN заканчивает маршрутизацию прямым подключением", () => {
-  const result = buildV2rayRouting({
-    customDirect: ["DOMAIN-SUFFIX,direct.example"],
-    customProxy: ["DOMAIN-SUFFIX,proxy.example"],
-    upstreamDirect: [],
-    upstreamProxy: ["1.1.1.1"],
+test("basic проксирует выбранные сервисы, остальное напрямую", () => {
+  const result = buildV2rayBasic({
+    direct: ["DOMAIN-SUFFIX,direct.example"],
+    proxy: ["DOMAIN-SUFFIX,proxy.example", "IP-CIDR,192.0.2.0/24"],
   });
 
   assert.equal(result.at(-1).outboundTag, "direct");
   assert.equal(result.at(-1).port, "0-65535");
-  assert.deepEqual(result[1].domain, ["domain:direct.example"]);
+  assert.ok(result.some((entry) => entry.domain?.includes("domain:proxy.example")));
+});
+
+test("geo направляет российские адреса напрямую, остальное в прокси", () => {
+  const result = buildV2rayGeo({ direct: [] });
+  assert.ok(result.some((entry) => entry.ip?.includes("geoip:ru")));
+  assert.equal(result.at(-1).outboundTag, "proxy");
+});
+
+test("nonru проксирует российские домены, остальное напрямую", () => {
+  const result = buildV2rayNonRu({ direct: [], proxy: [] });
+  assert.ok(result.some((entry) => entry.domain?.includes("domain:ru")));
+  assert.equal(result.at(-1).outboundTag, "direct");
 });

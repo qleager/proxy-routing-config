@@ -3,11 +3,7 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 
 const REPOSITORY = "qleager/proxy-routing-config";
-const UPSTREAM_CONFIG_URL =
-  "https://raw.githubusercontent.com/misha-tgshv/shadowrocket-configuration-file/main/conf/sr_ru_basic.conf";
-const SHADOWROCKET_UPDATE_URL =
-  `https://raw.githubusercontent.com/${REPOSITORY}/main/dist/shadowrocket.conf`;
-
+const RAW_ROOT = `https://raw.githubusercontent.com/${REPOSITORY}/main`;
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const RULE_TYPES = new Set([
   "DOMAIN",
@@ -27,15 +23,7 @@ export function meaningfulLines(text) {
 
 export function parseRule(line) {
   const parts = line.split(",").map((part) => part.trim());
-
-  if (parts.length === 1) {
-    const value = parts[0];
-    return looksLikeIp(value)
-      ? { ip: value }
-      : { domain: `domain:${value}` };
-  }
-
-  const type = parts[0].toUpperCase();
+  const type = parts[0]?.toUpperCase();
   const value = parts[1];
   if (!RULE_TYPES.has(type) || !value) return null;
 
@@ -43,7 +31,7 @@ export function parseRule(line) {
     case "DOMAIN":
       return { domain: `full:${value}` };
     case "DOMAIN-SUFFIX":
-      return { domain: `domain:${value}` };
+      return { domain: `domain:${normalizeDomain(value)}` };
     case "DOMAIN-KEYWORD":
       return { domain: value };
     case "IP-CIDR":
@@ -61,50 +49,24 @@ export function toShadowrocketRule(line, policy) {
   const type = parts[0]?.toUpperCase();
   const value = parts[1];
   if (!RULE_TYPES.has(type) || !value) {
-    throw new Error(`Неподдерживаемое пользовательское правило: ${line}`);
+    throw new Error(`Неподдерживаемое правило: ${line}`);
   }
 
-  const extras = parts.slice(2);
-  return [type, value, policy, ...extras].join(",");
+  return [type, value, policy, ...parts.slice(2)].join(",");
 }
 
-export function buildShadowrocketConfig(baseConfig, directLines, proxyLines) {
-  const lines = baseConfig.split(/\r?\n/);
-  const ruleSection = lines.findIndex((line) => line.trim() === "[Rule]");
-  if (ruleSection === -1) {
-    throw new Error("В базовом конфиге отсутствует секция [Rule]");
-  }
-
-  const cleaned = lines
-    .filter((line) => !/^\s*include\s*=/i.test(line))
-    .map((line) =>
-      /^\s*update-url\s*=/i.test(line)
-        ? `update-url = ${SHADOWROCKET_UPDATE_URL}`
-        : line.trimEnd(),
-    );
-
-  const newRuleSection = cleaned.findIndex((line) => line.trim() === "[Rule]");
-  const customRules = [
-    "# Пользовательские DIRECT-правила",
-    ...directLines.map((line) => toShadowrocketRule(line, "DIRECT")),
-    "# Пользовательские PROXY-правила",
-    ...proxyLines.map((line) => toShadowrocketRule(line, "PROXY")),
-    "",
-  ];
-
-  cleaned.splice(newRuleSection + 1, 0, ...customRules);
-  return `${cleaned.join("\n").trimEnd()}\n`;
-}
-
-function looksLikeIp(value) {
-  return (
-    value.includes(":") ||
-    /^\d{1,3}(?:\.\d{1,3}){3}(?:\/\d{1,3})?$/.test(value)
-  );
+function normalizeDomain(value) {
+  return value === "рф" ? "xn--p1ai" : value;
 }
 
 function unique(values) {
   return [...new Set(values)];
+}
+
+function validateRules(lines) {
+  for (const line of lines) {
+    if (!parseRule(line)) throw new Error(`Неподдерживаемое правило: ${line}`);
+  }
 }
 
 function collectRules(lines) {
@@ -143,139 +105,216 @@ function routingEntries(remarks, outboundTag, rules) {
   return entries;
 }
 
-export function buildV2rayRouting({
-  customDirect,
-  customProxy,
-  upstreamDirect,
-  upstreamProxy,
-}) {
+function privateNetworkEntry() {
+  return {
+    port: "",
+    outboundTag: "direct",
+    ip: ["geoip:private"],
+    enabled: true,
+    remarks: "Локальные сети: напрямую",
+  };
+}
+
+function finalEntry(outboundTag) {
+  return {
+    port: "0-65535",
+    outboundTag,
+    enabled: true,
+    remarks:
+      outboundTag === "direct"
+        ? "Остальной трафик: напрямую"
+        : "Остальной трафик: через прокси",
+  };
+}
+
+export function buildV2rayBasic({ direct, proxy }) {
   return [
-    {
-      port: "",
-      outboundTag: "direct",
-      ip: ["geoip:private"],
-      enabled: true,
-      remarks: "Локальные сети: напрямую",
-    },
+    privateNetworkEntry(),
     ...routingEntries(
       "Пользовательские исключения",
       "direct",
-      collectRules(customDirect),
+      collectRules(direct),
     ),
-    ...routingEntries(
-      "Пользовательские прокси-правила",
-      "proxy",
-      collectRules(customProxy),
-    ),
-    ...routingEntries(
-      "Правила автора: напрямую",
-      "direct",
-      collectRules(upstreamDirect),
-    ),
-    ...routingEntries(
-      "Правила автора: через прокси",
-      "proxy",
-      collectRules(upstreamProxy),
-    ),
-    {
-      port: "0-65535",
-      outboundTag: "direct",
-      enabled: true,
-      remarks: "Остальной трафик: напрямую",
-    },
+    ...routingEntries("Выбранные сервисы", "proxy", collectRules(proxy)),
+    finalEntry("direct"),
   ];
 }
 
-function extractBaseRules(baseConfig) {
-  const lines = baseConfig.split(/\r?\n/);
-  const start = lines.findIndex((line) => line.trim() === "[Rule]");
-  if (start === -1) throw new Error("В базовом конфиге отсутствует [Rule]");
-
-  const direct = [];
-  const proxy = [];
-  const sources = [];
-
-  for (const rawLine of lines.slice(start + 1)) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith("#") || line.startsWith("FINAL,")) continue;
-    if (line.startsWith("[")) break;
-
-    const parts = line.split(",").map((part) => part.trim());
-    const type = parts[0]?.toUpperCase();
-    const policy = parts[2]?.toUpperCase();
-
-    if (type === "RULE-SET" && /^https?:\/\//.test(parts[1] ?? "")) {
-      if (policy === "DIRECT" || policy === "PROXY") {
-        sources.push({ url: parts[1], policy });
-      }
-      continue;
-    }
-
-    if (RULE_TYPES.has(type) && (policy === "DIRECT" || policy === "PROXY")) {
-      const withoutPolicy = [parts[0], parts[1], ...parts.slice(3)].join(",");
-      (policy === "DIRECT" ? direct : proxy).push(withoutPolicy);
-    }
-  }
-
-  return { direct, proxy, sources };
+export function buildV2rayGeo({ direct }) {
+  return [
+    privateNetworkEntry(),
+    ...routingEntries(
+      "Пользовательские исключения",
+      "direct",
+      collectRules(direct),
+    ),
+    {
+      port: "",
+      outboundTag: "direct",
+      domain: ["domain:ru", "domain:su", "domain:xn--p1ai"],
+      ip: ["geoip:ru"],
+      enabled: true,
+      remarks: "Российские домены и IP: напрямую",
+    },
+    finalEntry("proxy"),
+  ];
 }
 
-async function fetchText(url) {
-  const response = await fetch(url, {
-    headers: { "User-Agent": "qleager/proxy-routing-config" },
-    redirect: "follow",
-  });
-  if (!response.ok) {
-    throw new Error(`Не удалось скачать ${url}: HTTP ${response.status}`);
+export function buildV2rayNonRu({ direct, proxy }) {
+  const russianRules = [
+    "DOMAIN-SUFFIX,ru",
+    "DOMAIN-SUFFIX,su",
+    "DOMAIN-SUFFIX,рф",
+  ];
+  return [
+    privateNetworkEntry(),
+    ...routingEntries(
+      "Пользовательские исключения",
+      "direct",
+      collectRules(direct),
+    ),
+    ...routingEntries(
+      "Российские домены",
+      "proxy",
+      collectRules(russianRules),
+    ),
+    ...routingEntries(
+      "Дополнительные прокси-правила",
+      "proxy",
+      collectRules(proxy),
+    ),
+    finalEntry("direct"),
+  ];
+}
+
+function renderGeneral(general, outputName) {
+  const updateUrl = `${RAW_ROOT}/dist/${outputName}`;
+  return general
+    .replaceAll("{{UPDATE_URL}}", updateUrl)
+    .split(/\r?\n/)
+    .map((line) => line.trimEnd())
+    .join("\n")
+    .trimEnd();
+}
+
+function renderShadowrocket({
+  general,
+  outputName,
+  direct,
+  mode,
+}) {
+  const lines = [
+    renderGeneral(general, outputName),
+    "",
+    "[Rule]",
+    "# Личные исключения имеют наивысший приоритет",
+    ...direct.map((line) => toShadowrocketRule(line, "DIRECT")),
+  ];
+
+  if (mode === "basic") {
+    lines.push(
+      `RULE-SET,${RAW_ROOT}/rules/proxy.list,PROXY`,
+      "FINAL,DIRECT",
+    );
+  } else if (mode === "geo") {
+    lines.push(
+      "GEOIP,RU,DIRECT",
+      "DOMAIN-SUFFIX,ru,DIRECT",
+      "DOMAIN-SUFFIX,su,DIRECT",
+      "DOMAIN-SUFFIX,рф,DIRECT",
+      "FINAL,PROXY",
+    );
+  } else if (mode === "nonru") {
+    lines.push(
+      "DOMAIN-SUFFIX,ru,PROXY",
+      "DOMAIN-SUFFIX,su,PROXY",
+      "DOMAIN-SUFFIX,рф,PROXY",
+      `RULE-SET,${RAW_ROOT}/rules/proxy.list,PROXY`,
+      "FINAL,DIRECT",
+    );
+  } else {
+    throw new Error(`Неизвестный режим: ${mode}`);
   }
-  return response.text();
+
+  return `${lines.join("\n")}\n`;
+}
+
+function renderRuleList(lines) {
+  return [
+    "# Generated by qleager/proxy-routing-config",
+    "# Edit source/proxy.list and custom/proxy.list instead of this file.",
+    ...unique(lines),
+    "",
+  ].join("\n");
 }
 
 async function main() {
-  const [baseConfig, customDirectText, customProxyText] = await Promise.all([
-    fetchText(UPSTREAM_CONFIG_URL),
-    readFile(path.join(ROOT, "custom/direct.list"), "utf8"),
-    readFile(path.join(ROOT, "custom/proxy.list"), "utf8"),
-  ]);
+  const [general, sourceProxyText, customDirectText, customProxyText] =
+    await Promise.all([
+      readFile(path.join(ROOT, "source/general.conf"), "utf8"),
+      readFile(path.join(ROOT, "source/proxy.list"), "utf8"),
+      readFile(path.join(ROOT, "custom/direct.list"), "utf8"),
+      readFile(path.join(ROOT, "custom/proxy.list"), "utf8"),
+    ]);
 
+  const sourceProxy = meaningfulLines(sourceProxyText);
   const customDirect = meaningfulLines(customDirectText);
   const customProxy = meaningfulLines(customProxyText);
-  const baseRules = extractBaseRules(baseConfig);
-  const downloadedSources = await Promise.all(
-    baseRules.sources.map(async ({ url, policy }) => ({
-      policy,
-      lines: meaningfulLines(await fetchText(url)),
-    })),
-  );
+  const allProxy = unique([...sourceProxy, ...customProxy]);
+  validateRules([...customDirect, ...allProxy]);
 
-  const upstreamDirect = [...baseRules.direct];
-  const upstreamProxy = [...baseRules.proxy];
-  for (const source of downloadedSources) {
-    (source.policy === "DIRECT" ? upstreamDirect : upstreamProxy).push(
-      ...source.lines,
-    );
-  }
-
-  const shadowrocket = buildShadowrocketConfig(
-    baseConfig,
-    customDirect,
-    customProxy,
-  );
-  const v2ray = buildV2rayRouting({
-    customDirect,
-    customProxy,
-    upstreamDirect,
-    upstreamProxy,
+  const shadowrocketBasic = renderShadowrocket({
+    general,
+    outputName: "shadowrocket.conf",
+    direct: customDirect,
+    mode: "basic",
+  });
+  const shadowrocketGeo = renderShadowrocket({
+    general,
+    outputName: "shadowrocket-geo.conf",
+    direct: customDirect,
+    mode: "geo",
+  });
+  const shadowrocketNonRu = renderShadowrocket({
+    general,
+    outputName: "shadowrocket-nonru.conf",
+    direct: customDirect,
+    mode: "nonru",
+  });
+  const v2rayBasic = buildV2rayBasic({
+    direct: customDirect,
+    proxy: allProxy,
+  });
+  const v2rayGeo = buildV2rayGeo({ direct: customDirect });
+  const v2rayNonRu = buildV2rayNonRu({
+    direct: customDirect,
+    proxy: allProxy,
   });
 
   const dist = path.join(ROOT, "dist");
-  await mkdir(dist, { recursive: true });
+  const rules = path.join(ROOT, "rules");
   await Promise.all([
-    writeFile(path.join(dist, "shadowrocket.conf"), shadowrocket),
+    mkdir(dist, { recursive: true }),
+    mkdir(rules, { recursive: true }),
+  ]);
+
+  const json = (value) => `${JSON.stringify(value, null, 2)}\n`;
+  await Promise.all([
+    writeFile(path.join(rules, "proxy.list"), renderRuleList(allProxy)),
+    writeFile(path.join(dist, "shadowrocket.conf"), shadowrocketBasic),
     writeFile(
-      path.join(dist, "v2rayn-routing.json"),
-      `${JSON.stringify(v2ray, null, 2)}\n`,
+      path.join(dist, "shadowrocket-basic.conf"),
+      shadowrocketBasic,
     ),
+    writeFile(path.join(dist, "shadowrocket-geo.conf"), shadowrocketGeo),
+    writeFile(
+      path.join(dist, "shadowrocket-nonru.conf"),
+      shadowrocketNonRu,
+    ),
+    writeFile(path.join(dist, "v2rayn-routing.json"), json(v2rayBasic)),
+    writeFile(path.join(dist, "v2rayn-basic.json"), json(v2rayBasic)),
+    writeFile(path.join(dist, "v2rayn-geo.json"), json(v2rayGeo)),
+    writeFile(path.join(dist, "v2rayn-nonru.json"), json(v2rayNonRu)),
   ]);
 }
 

@@ -1,0 +1,31 @@
+[
+  {
+    "port": "",
+    "outboundTag": "direct",
+    "ip": [
+      "geoip:private"
+    ],
+    "enabled": true,
+    "remarks": "Локальные сети: напрямую"
+  },
+  {
+    "port": "",
+    "outboundTag": "direct",
+    "domain": [
+      "domain:ru",
+      "domain:su",
+      "domain:xn--p1ai"
+    ],
+    "ip": [
+      "geoip:ru"
+    ],
+    "enabled": true,
+    "remarks": "Российские домены и IP: напрямую"
+  },
+  {
+    "port": "0-65535",
+    "outboundTag": "proxy",
+    "enabled": true,
+    "remarks": "Остальной трафик: через прокси"
+  }
+]

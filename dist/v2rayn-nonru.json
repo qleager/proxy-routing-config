@@ -12,6 +12,17 @@
     "port": "",
     "outboundTag": "proxy",
     "domain": [
+      "domain:ru",
+      "domain:su",
+      "domain:xn--p1ai"
+    ],
+    "enabled": true,
+    "remarks": "Российские домены: домены"
+  },
+  {
+    "port": "",
+    "outboundTag": "proxy",
+    "domain": [
       "domain:openai.com",
       "domain:chatgpt.com",
       "domain:oaistatic.com",
@@ -65,7 +76,7 @@
       "domain:canva.com"
     ],
     "enabled": true,
-    "remarks": "Выбранные сервисы: домены"
+    "remarks": "Дополнительные прокси-правила: домены"
   },
   {
     "port": "",
@@ -82,7 +93,7 @@
       "2001:67c:4e8::/48"
     ],
     "enabled": true,
-    "remarks": "Выбранные сервисы: IP"
+    "remarks": "Дополнительные прокси-правила: IP"
   },
   {
     "port": "0-65535",
