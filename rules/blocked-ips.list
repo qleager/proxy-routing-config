@@ -1,4 +1,5 @@
 # Generated from Re:filter lists (MIT License).
+# Includes source/blocked-overrides.list.
 # See THIRD_PARTY_NOTICES.md.
 IP-CIDR,1.179.227.45/32
 IP-CIDR,1.179.246.121/32

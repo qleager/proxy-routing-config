@@ -1,4 +1,5 @@
 # Generated from Re:filter lists (MIT License).
+# Includes source/blocked-overrides.list.
 # See THIRD_PARTY_NOTICES.md.
 DOMAIN-SUFFIX,0.nb-novorossiysk.net
 DOMAIN-SUFFIX,0.torlink.site
@@ -86140,3 +86141,4 @@ DOMAIN-SUFFIX,zzmusic.me
 DOMAIN-SUFFIX,zzzchan.xyz
 DOMAIN-SUFFIX,zzztube.com
 DOMAIN-SUFFIX,zzztube.tv
+DOMAIN-SUFFIX,apple.com
