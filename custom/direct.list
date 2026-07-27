@@ -1,0 +1,6 @@
+# Личные правила, которые должны идти напрямую.
+# Формат: одно правило Shadowrocket без политики на строку.
+# Примеры:
+# DOMAIN-SUFFIX,example.ru
+# DOMAIN,api.example.ru
+# IP-CIDR,192.0.2.0/24,no-resolve
