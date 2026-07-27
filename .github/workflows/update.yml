@@ -1,0 +1,58 @@
+name: Update routing configs
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 2 * * *"
+  push:
+    branches:
+      - main
+    paths:
+      - "custom/**"
+      - "scripts/**"
+      - "test/**"
+      - "package.json"
+      - ".github/workflows/update.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-routing-configs
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Validate generated files
+        run: |
+          node --check scripts/build.mjs
+          node -e "JSON.parse(require('node:fs').readFileSync('dist/v2rayn-routing.json', 'utf8'))"
+          git diff --check
+
+      - name: Commit generated files
+        run: |
+          if git diff --quiet -- dist; then
+            echo "Generated files are already up to date."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dist
+          git commit -m "Update generated routing configs"
+          git push
