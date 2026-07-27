@@ -1,61 +1,68 @@
-# Единые правила для Shadowrocket и v2rayN
+# Proxy routing configuration generator
 
-Самостоятельный генератор конфигураций для устройств Apple и Windows. Базовые
-правила, шаблоны и сборщик находятся в этом репозитории и не зависят от чужого
-репозитория конфигураций.
+A configuration generator for Shadowrocket on iOS, iPadOS, macOS, and tvOS,
+and for v2rayN on Windows. It builds matching routing profiles from shared
+sources so the same proxy policy can be used across devices.
 
-## Режимы
+## Routing modes
 
-| Режим | Поведение |
+| Mode | Behavior |
 | --- | --- |
-| `basic` | Выбранные сервисы через прокси, остальное напрямую |
-| `geo` | Российские домены и IP напрямую, остальное через прокси |
-| `nonru` | Российские домены через прокси, остальное напрямую |
+| `basic` | Routes selected services through the proxy and connects everything else directly |
+| `blocked` | Routes resources blocked or restricted in Russia through the proxy and connects everything else directly |
+| `geo` | Connects Russian domains and IP addresses directly and routes everything else through the proxy |
+| `nonru` | Routes Russian domains through the proxy and connects everything else directly |
 
 ## Shadowrocket
 
-Основной режим `basic`:
+Use the `blocked` profile to proxy only blocked or restricted resources:
+
+```text
+https://raw.githubusercontent.com/qleager/proxy-routing-config/main/dist/shadowrocket-blocked.conf
+```
+
+Other profiles:
 
 ```text
 https://raw.githubusercontent.com/qleager/proxy-routing-config/main/dist/shadowrocket.conf
-```
-
-Дополнительные режимы:
-
-```text
 https://raw.githubusercontent.com/qleager/proxy-routing-config/main/dist/shadowrocket-geo.conf
 https://raw.githubusercontent.com/qleager/proxy-routing-config/main/dist/shadowrocket-nonru.conf
 ```
 
-В каждом файле указан собственный `update-url`.
+Each Shadowrocket profile contains its own `update-url`.
 
 ## v2rayN
 
-Основной режим `basic`:
+Use the `blocked` profile to proxy only blocked or restricted resources:
+
+```text
+https://raw.githubusercontent.com/qleager/proxy-routing-config/main/dist/v2rayn-blocked.json
+```
+
+Other profiles:
 
 ```text
 https://raw.githubusercontent.com/qleager/proxy-routing-config/main/dist/v2rayn-routing.json
-```
-
-Дополнительные режимы:
-
-```text
 https://raw.githubusercontent.com/qleager/proxy-routing-config/main/dist/v2rayn-geo.json
 https://raw.githubusercontent.com/qleager/proxy-routing-config/main/dist/v2rayn-nonru.json
 ```
 
-В v2rayN откройте настройки маршрутизации и импортируйте нужный JSON из URL.
-Повторное обновление URL может потребоваться вручную — это зависит от версии
-клиента.
+Open the v2rayN routing settings and import the selected JSON file from its
+URL. Importing the large `blocked` profile can take some time. Refreshing an
+imported URL may need to be done manually, depending on the client version.
 
-## Где редактировать правила
+## Rule sources
 
-- `source/proxy.list` — общий базовый каталог сервисов;
-- `custom/proxy.list` — личные правила через прокси;
-- `custom/direct.list` — личные исключения напрямую;
-- `source/general.conf` — общие параметры Shadowrocket.
+- `source/proxy.list` contains the repository's curated service catalog.
+- `source/blocked-sources.json` defines the MIT-licensed Re:filter feeds used
+  by the `blocked` mode.
+- `custom/proxy.list` contains personal proxy rules.
+- `custom/direct.list` contains personal direct-connection exceptions.
+- `source/general.conf` contains shared Shadowrocket settings.
 
-Формат правила:
+User-defined `DIRECT` rules are evaluated before generated proxy rules.
+
+Supported rule syntax:
 
 ```text
 DOMAIN-SUFFIX,example.com
@@ -64,16 +71,16 @@ DOMAIN-KEYWORD,example
 IP-CIDR,198.51.100.0/24,no-resolve
 ```
 
-После изменения исходников GitHub Actions пересобирает все файлы. Личные
-`DIRECT`-правила имеют приоритет над базовым каталогом.
+See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for data-source license
+information.
 
-## Автоматическая сборка
+## Automatic updates
 
-Workflow запускается:
+GitHub Actions rebuilds and validates all profiles:
 
-- ежедневно в `02:17 UTC` (`05:17` по Москве);
-- после изменения исходников, личных правил, сборщика или тестов;
-- вручную через **Actions → Update routing configs → Run workflow**.
+- every day at `02:17 UTC`;
+- after generator, source, custom-rule, test, or workflow changes;
+- manually from **Actions → Update routing configs → Run workflow**.
 
-Сборка проверяет формат правил, запускает тесты и публикует только валидные
-конфигурации.
+If an external blocked-resource feed is unavailable or returns no usable
+rules, the workflow fails without replacing the previously generated files.

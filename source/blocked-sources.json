@@ -1,0 +1,11 @@
+{
+  "domains": [
+    "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/domains_all.lst",
+    "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/community.lst"
+  ],
+  "ips": [
+    "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/ipsum.lst",
+    "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/community_ips.lst",
+    "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/discord_ips.lst"
+  ]
+}

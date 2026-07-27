@@ -3,9 +3,12 @@ import test from "node:test";
 
 import {
   buildV2rayBasic,
+  buildV2rayBlocked,
   buildV2rayGeo,
   buildV2rayNonRu,
   meaningfulLines,
+  normalizeBlockedDomains,
+  normalizeBlockedIps,
   parseRule,
   toShadowrocketRule,
 } from "../scripts/build.mjs";
@@ -61,5 +64,31 @@ test("geo направляет российские адреса напряму�
 test("nonru проксирует российские домены, остальное напрямую", () => {
   const result = buildV2rayNonRu({ direct: [], proxy: [] });
   assert.ok(result.some((entry) => entry.domain?.includes("domain:ru")));
+  assert.equal(result.at(-1).outboundTag, "direct");
+});
+
+test("normalizes and deduplicates blocked-resource sources", () => {
+  assert.deepEqual(
+    normalizeBlockedDomains([
+      "Example.com\n*.cdn.example.com\n# comment\nexample.com\n",
+    ]),
+    ["cdn.example.com", "example.com"],
+  );
+  assert.deepEqual(
+    normalizeBlockedIps(["192.0.2.0/24\n2001:db8::/32\n192.0.2.0/24\n"]),
+    ["192.0.2.0/24", "2001:db8::/32"],
+  );
+});
+
+test("blocked proxies only blocked resources", () => {
+  const result = buildV2rayBlocked({
+    direct: ["DOMAIN-SUFFIX,direct.example"],
+    blockedDomains: ["blocked.example"],
+    blockedIps: ["192.0.2.0/24"],
+  });
+  assert.ok(
+    result.some((entry) => entry.domain?.includes("domain:blocked.example")),
+  );
+  assert.ok(result.some((entry) => entry.ip?.includes("192.0.2.0/24")));
   assert.equal(result.at(-1).outboundTag, "direct");
 });
