@@ -9,7 +9,7 @@ sources so the same proxy policy can be used across devices.
 | Mode | Behavior |
 | --- | --- |
 | `basic` | Routes selected services through the proxy and connects everything else directly |
-| `blocked` | Routes resources blocked or restricted in `Russia 🇷🇺` through the proxy and connects everything else directly |
+| `blocked` | Routes resources blocked or restricted in Russia through the proxy and connects everything else directly |
 | `geo` | Connects Russian domains and IP addresses directly and routes everything else through the proxy |
 | `nonru` | Routes Russian domains through the proxy and connects everything else directly |
 
@@ -56,6 +56,8 @@ imported URL may need to be done manually, depending on the client version.
 - `source/proxy.list` contains the repository's curated service catalog.
 - `source/blocked-sources.json` defines the MIT-licensed Re:filter feeds used
   by the `blocked` mode.
+- `source/blocked-overrides.list` contains manually confirmed blocks missing
+  from upstream feeds. These rules are published for every `blocked` user.
 - `custom/proxy.list` contains personal proxy rules.
 - `custom/direct.list` contains personal direct-connection exceptions.
 - `source/general.conf` contains shared Shadowrocket settings.

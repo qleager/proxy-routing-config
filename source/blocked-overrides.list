@@ -1,0 +1,3 @@
+# Manually confirmed blocks that are missing from upstream feeds.
+# These rules are included in every public blocked profile.
+DOMAIN-SUFFIX,apple.com

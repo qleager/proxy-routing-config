@@ -187,7 +187,12 @@ export function buildV2rayNonRu({ direct, proxy }) {
   ];
 }
 
-export function buildV2rayBlocked({ direct, blockedDomains, blockedIps }) {
+export function buildV2rayBlocked({
+  direct,
+  blockedDomains,
+  blockedIps,
+  overrides = [],
+}) {
   return [
     privateNetworkEntry(),
     ...routingEntries(
@@ -203,6 +208,7 @@ export function buildV2rayBlocked({ direct, blockedDomains, blockedIps }) {
         ...blockedIps.map((ip) =>
           `${ip.includes(":") ? "IP-CIDR6" : "IP-CIDR"},${ip}`,
         ),
+        ...overrides,
       ]),
     ),
     finalEntry("direct"),
@@ -304,22 +310,43 @@ export function normalizeBlockedIps(texts) {
   return unique(ips).sort();
 }
 
-function renderBlockedDomainList(domains) {
+function partitionBlockedOverrides(lines) {
+  validateRules(lines);
+  const domains = [];
+  const ips = [];
+
+  for (const line of lines) {
+    const parsed = parseRule(line);
+    (parsed.domain ? domains : ips).push(line);
+  }
+
+  return { domains, ips };
+}
+
+function renderBlockedDomainList(domains, overrides) {
   return [
     "# Generated from Re:filter lists (MIT License).",
+    "# Includes source/blocked-overrides.list.",
     "# See THIRD_PARTY_NOTICES.md.",
-    ...domains.map((domain) => `DOMAIN-SUFFIX,${domain}`),
+    ...unique([
+      ...domains.map((domain) => `DOMAIN-SUFFIX,${domain}`),
+      ...overrides,
+    ]),
     "",
   ].join("\n");
 }
 
-function renderBlockedIpList(ips) {
+function renderBlockedIpList(ips, overrides) {
   return [
     "# Generated from Re:filter lists (MIT License).",
+    "# Includes source/blocked-overrides.list.",
     "# See THIRD_PARTY_NOTICES.md.",
-    ...ips.map(
-      (ip) => `${ip.includes(":") ? "IP-CIDR6" : "IP-CIDR"},${ip}`,
-    ),
+    ...unique([
+      ...ips.map(
+        (ip) => `${ip.includes(":") ? "IP-CIDR6" : "IP-CIDR"},${ip}`,
+      ),
+      ...overrides,
+    ]),
     "",
   ].join("\n");
 }
@@ -342,6 +369,7 @@ async function main() {
     customDirectText,
     customProxyText,
     blockedSourcesText,
+    blockedOverridesText,
   ] =
     await Promise.all([
       readFile(path.join(ROOT, "source/general.conf"), "utf8"),
@@ -349,6 +377,7 @@ async function main() {
       readFile(path.join(ROOT, "custom/direct.list"), "utf8"),
       readFile(path.join(ROOT, "custom/proxy.list"), "utf8"),
       readFile(path.join(ROOT, "source/blocked-sources.json"), "utf8"),
+      readFile(path.join(ROOT, "source/blocked-overrides.list"), "utf8"),
     ]);
 
   const sourceProxy = meaningfulLines(sourceProxyText);
@@ -363,6 +392,8 @@ async function main() {
   ]);
   const blockedDomains = normalizeBlockedDomains(blockedDomainTexts);
   const blockedIps = normalizeBlockedIps(blockedIpTexts);
+  const blockedOverrides = meaningfulLines(blockedOverridesText);
+  const partitionedOverrides = partitionBlockedOverrides(blockedOverrides);
   if (!blockedDomains.length || !blockedIps.length) {
     throw new Error("Blocked-resource sources returned no usable rules");
   }
@@ -404,6 +435,7 @@ async function main() {
     direct: customDirect,
     blockedDomains,
     blockedIps,
+    overrides: blockedOverrides,
   });
 
   const dist = path.join(ROOT, "dist");
@@ -418,11 +450,11 @@ async function main() {
     writeFile(path.join(rules, "proxy.list"), renderRuleList(allProxy)),
     writeFile(
       path.join(rules, "blocked-domains.list"),
-      renderBlockedDomainList(blockedDomains),
+      renderBlockedDomainList(blockedDomains, partitionedOverrides.domains),
     ),
     writeFile(
       path.join(rules, "blocked-ips.list"),
-      renderBlockedIpList(blockedIps),
+      renderBlockedIpList(blockedIps, partitionedOverrides.ips),
     ),
     writeFile(path.join(dist, "shadowrocket.conf"), shadowrocketBasic),
     writeFile(

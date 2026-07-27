@@ -85,10 +85,20 @@ test("blocked proxies only blocked resources", () => {
     direct: ["DOMAIN-SUFFIX,direct.example"],
     blockedDomains: ["blocked.example"],
     blockedIps: ["192.0.2.0/24"],
+    overrides: [
+      "DOMAIN,quietly-blocked.example",
+      "IP-CIDR,198.51.100.0/24,no-resolve",
+    ],
   });
   assert.ok(
     result.some((entry) => entry.domain?.includes("domain:blocked.example")),
   );
   assert.ok(result.some((entry) => entry.ip?.includes("192.0.2.0/24")));
+  assert.ok(
+    result.some((entry) =>
+      entry.domain?.includes("full:quietly-blocked.example"),
+    ),
+  );
+  assert.ok(result.some((entry) => entry.ip?.includes("198.51.100.0/24")));
   assert.equal(result.at(-1).outboundTag, "direct");
 });
