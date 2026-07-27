@@ -86152,7 +86152,8 @@
       "domain:zzzchan.xyz",
       "domain:zzztube.com",
       "domain:zzztube.tv",
-      "domain:apple.com"
+      "domain:apple.com",
+      "domain:google.com"
     ],
     "enabled": true,
     "remarks": "Blocked resources: домены"
