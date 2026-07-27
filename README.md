@@ -9,7 +9,7 @@ sources so the same proxy policy can be used across devices.
 | Mode | Behavior |
 | --- | --- |
 | `basic` | Routes selected services through the proxy and connects everything else directly |
-| `blocked` | Routes resources blocked or restricted in Russia through the proxy and connects everything else directly |
+| `blocked` | Routes resources blocked or restricted in `Russia 🇷🇺` through the proxy and connects everything else directly |
 | `geo` | Connects Russian domains and IP addresses directly and routes everything else through the proxy |
 | `nonru` | Routes Russian domains through the proxy and connects everything else directly |
 
