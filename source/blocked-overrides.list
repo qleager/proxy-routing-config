@@ -2,3 +2,36 @@
 # These rules are included in every public blocked profile.
 DOMAIN-SUFFIX,apple.com
 DOMAIN-SUFFIX,google.com
+
+# KinoPub domains used by MicroIPTV but missing from the maintained v2fly list.
+DOMAIN-SUFFIX,alador.space
+DOMAIN-SUFFIX,all-service.space
+DOMAIN-SUFFIX,cdn4t.store
+DOMAIN-SUFFIX,cdn4t.xyz
+DOMAIN-SUFFIX,cdn5t.store
+DOMAIN-SUFFIX,cdn5t.xyz
+DOMAIN-SUFFIX,cdn32.lol
+DOMAIN-SUFFIX,cdn32.online
+DOMAIN-SUFFIX,cdntogo.net
+DOMAIN-SUFFIX,digital-cdn.net
+DOMAIN-SUFFIX,flexcdn.cloud
+DOMAIN-SUFFIX,gravatar.com
+DOMAIN-SUFFIX,ios-kp.store
+DOMAIN-SUFFIX,iptv.online
+DOMAIN-SUFFIX,kp-apps.xyz
+DOMAIN-SUFFIX,kpapp.link
+DOMAIN-SUFFIX,kpcache.net
+DOMAIN-SUFFIX,kpdl.cc
+DOMAIN-SUFFIX,kpstv.net
+DOMAIN-SUFFIX,mycdn.video
+DOMAIN-SUFFIX,proxykp.xyz
+DOMAIN-SUFFIX,service-kp.com
+DOMAIN-SUFFIX,smarttv.zeasn.tv
+DOMAIN-SUFFIX,srvkp.com
+DOMAIN-SUFFIX,teleos.club
+DOMAIN-SUFFIX,themoviedb.org
+DOMAIN-SUFFIX,tmdb.org
+DOMAIN-SUFFIX,zencdn.net
+DOMAIN,i0.wp.com
+DOMAIN,kinopub.onlineiptv.online
+DOMAIN,m.boraboraboom.ru

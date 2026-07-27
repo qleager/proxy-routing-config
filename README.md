@@ -54,10 +54,12 @@ imported URL may need to be done manually, depending on the client version.
 ## Rule sources
 
 - `source/proxy.list` contains the repository's curated service catalog.
-- `source/blocked-sources.json` defines the MIT-licensed Re:filter feeds used
-  by the `blocked` mode.
+- `source/blocked-sources.json` defines the MIT-licensed Re:filter feeds and
+  the maintained KinoPub list from `v2fly/domain-list-community` used by the
+  `blocked` mode.
 - `source/blocked-overrides.list` contains manually confirmed blocks missing
-  from upstream feeds. These rules are published for every `blocked` user.
+  from upstream feeds, including MicroIPTV-specific KinoPub domains. These
+  rules are published for every `blocked` user.
 - `custom/proxy.list` contains personal proxy rules.
 - `custom/direct.list` contains personal direct-connection exceptions.
 - `source/general.conf` contains shared Shadowrocket settings.

@@ -303,6 +303,28 @@ export function normalizeBlockedDomains(texts) {
   return unique(domains).sort();
 }
 
+export function normalizeV2flyDomains(texts) {
+  const domains = texts
+    .flatMap((text) => text.split(/\r?\n/))
+    .map((line) => line.replace(/\s+#.*$/, "").trim().toLowerCase())
+    .filter(
+      (line) =>
+        line &&
+        !line.startsWith("#") &&
+        !line.startsWith("regexp:") &&
+        !line.startsWith("keyword:") &&
+        !line.startsWith("include:"),
+    )
+    .map((line) => line.replace(/\s+@[\w-]+.*$/, ""))
+    .map((line) => line.replace(/^(?:domain:|full:)/, ""))
+    .filter((domain) =>
+      /^(?:[a-z0-9_](?:[a-z0-9_-]{0,61}[a-z0-9_])?\.)+[a-z0-9-]{2,63}$/.test(
+        domain,
+      ),
+    );
+  return unique(domains).sort();
+}
+
 export function normalizeBlockedIps(texts) {
   const ips = texts
     .flatMap((text) => meaningfulLines(text))
@@ -325,7 +347,7 @@ function partitionBlockedOverrides(lines) {
 
 function renderBlockedDomainList(domains, overrides) {
   return [
-    "# Generated from Re:filter lists (MIT License).",
+    "# Generated from Re:filter and v2fly/domain-list-community (MIT License).",
     "# Includes source/blocked-overrides.list.",
     "# See THIRD_PARTY_NOTICES.md.",
     ...unique([
@@ -386,11 +408,16 @@ async function main() {
   const allProxy = unique([...sourceProxy, ...customProxy]);
   validateRules([...customDirect, ...allProxy]);
   const blockedSources = JSON.parse(blockedSourcesText);
-  const [blockedDomainTexts, blockedIpTexts] = await Promise.all([
-    Promise.all(blockedSources.domains.map(fetchText)),
-    Promise.all(blockedSources.ips.map(fetchText)),
-  ]);
-  const blockedDomains = normalizeBlockedDomains(blockedDomainTexts);
+  const [blockedDomainTexts, blockedIpTexts, v2flyDomainTexts] =
+    await Promise.all([
+      Promise.all(blockedSources.domains.map(fetchText)),
+      Promise.all(blockedSources.ips.map(fetchText)),
+      Promise.all((blockedSources.v2flyDomains ?? []).map(fetchText)),
+    ]);
+  const blockedDomains = unique([
+    ...normalizeBlockedDomains(blockedDomainTexts),
+    ...normalizeV2flyDomains(v2flyDomainTexts),
+  ]).sort();
   const blockedIps = normalizeBlockedIps(blockedIpTexts);
   const blockedOverrides = meaningfulLines(blockedOverridesText);
   const partitionedOverrides = partitionBlockedOverrides(blockedOverrides);

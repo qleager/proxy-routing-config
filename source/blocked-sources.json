@@ -3,6 +3,9 @@
     "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/domains_all.lst",
     "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/community.lst"
   ],
+  "v2flyDomains": [
+    "https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/kinopub"
+  ],
   "ips": [
     "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/ipsum.lst",
     "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/community_ips.lst",

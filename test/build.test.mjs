@@ -9,6 +9,7 @@ import {
   meaningfulLines,
   normalizeBlockedDomains,
   normalizeBlockedIps,
+  normalizeV2flyDomains,
   parseRule,
   toShadowrocketRule,
 } from "../scripts/build.mjs";
@@ -77,6 +78,21 @@ test("normalizes and deduplicates blocked-resource sources", () => {
   assert.deepEqual(
     normalizeBlockedIps(["192.0.2.0/24\n2001:db8::/32\n192.0.2.0/24\n"]),
     ["192.0.2.0/24", "2001:db8::/32"],
+  );
+});
+
+test("normalizes v2fly domains and skips unsupported expressions", () => {
+  assert.deepEqual(
+    normalizeV2flyDomains([
+      [
+        "kino.pub",
+        "ahc.ovh # sub domains mirror",
+        "domain:cdn.example @attribute",
+        "regexp:(\\w+)-static-[0-9]+\\.cdntogo\\.net$",
+        "include:another-list",
+      ].join("\n"),
+    ]),
+    ["ahc.ovh", "cdn.example", "kino.pub"],
   );
 });
 
