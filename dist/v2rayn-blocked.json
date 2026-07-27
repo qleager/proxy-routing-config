@@ -86153,9 +86153,7 @@
       "domain:zzztube.com",
       "domain:zzztube.tv",
       "domain:apple.com",
-      "domain:google.com",
-      "domain:sqaces.com",
-      "hornet"
+      "domain:google.com"
     ],
     "enabled": true,
     "remarks": "Blocked resources: домены"
