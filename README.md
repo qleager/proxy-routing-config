@@ -9,7 +9,7 @@ sources so the same proxy policy can be used across devices.
 | Mode | Behavior |
 | --- | --- |
 | `basic` | Routes selected services through the proxy and connects everything else directly |
-| `blocked` | Routes resources blocked or restricted in `Russia 🇷🇺` through the proxy and connects everything else directly |
+| `blocked` | Routes resources blocked or restricted in Russia through the proxy and connects everything else directly |
 | `geo` | Connects Russian domains and IP addresses directly and routes everything else through the proxy |
 | `nonru` | Routes Russian domains through the proxy and connects everything else directly |
 
@@ -86,3 +86,10 @@ GitHub Actions rebuilds and validates all profiles:
 
 If an external blocked-resource feed is unavailable or returns no usable
 rules, the workflow fails without replacing the previously generated files.
+
+## License
+
+The generator and repository-owned configuration files are available under
+the [MIT License](LICENSE). Generated artifacts that include third-party data
+also remain subject to the notices in
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
