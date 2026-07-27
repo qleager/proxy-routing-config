@@ -86154,7 +86154,7 @@
       "domain:zzztube.tv",
       "domain:apple.com",
       "domain:google.com",
-      "domain:gethornet.com"
+      "hornet"
     ],
     "enabled": true,
     "remarks": "Blocked resources: домены"
