@@ -35,3 +35,12 @@ DOMAIN-SUFFIX,zencdn.net
 DOMAIN,i0.wp.com
 DOMAIN,kinopub.onlineiptv.online
 DOMAIN,m.boraboraboom.ru
+
+# Keep the MicroIPTV playlist bootstrap and KinoPub API on the same route.
+DOMAIN-SUFFIX,dnskp.cc
+DOMAIN-SUFFIX,dub.sh
+DOMAIN-SUFFIX,git.new
+DOMAIN-SUFFIX,githubusercontent.com
+DOMAIN-SUFFIX,kinopub.link
+DOMAIN-SUFFIX,textdub.sh
+DOMAIN-SUFFIX,urlr.me
