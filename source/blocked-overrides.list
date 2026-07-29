@@ -37,6 +37,7 @@ DOMAIN,kinopub.onlineiptv.online
 DOMAIN,m.boraboraboom.ru
 
 # Keep the MicroIPTV playlist bootstrap and KinoPub API on the same route.
+DOMAIN-SUFFIX,appkp.cc
 DOMAIN-SUFFIX,dnskp.cc
 DOMAIN-SUFFIX,dub.sh
 DOMAIN-SUFFIX,git.new
