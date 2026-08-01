@@ -12,7 +12,11 @@
     "port": "",
     "outboundTag": "block",
     "domain": [
-      "geosite:category-ads-all"
+      "geosite:category-ads-all",
+      "domain:pornbiz.com",
+      "domain:tjk-njk.com",
+      "domain:trafficfactory.com",
+      "domain:zline0.com"
     ],
     "enabled": true,
     "remarks": "Advertising: blocked"
