@@ -14,7 +14,7 @@ import {
   toShadowrocketRule,
 } from "../scripts/build.mjs";
 
-function assertAdBlocking(result) {
+function assertAdBlocking(result, expectedDomain) {
   assert.ok(
     result.some(
       (entry) =>
@@ -22,6 +22,15 @@ function assertAdBlocking(result) {
         entry.domain?.includes("geosite:category-ads-all"),
     ),
   );
+  if (expectedDomain) {
+    assert.ok(
+      result.some(
+        (entry) =>
+          entry.outboundTag === "block" &&
+          entry.domain?.includes(`domain:${expectedDomain}`),
+      ),
+    );
+  }
 }
 
 test("убирает комментарии и пустые строки", () => {
@@ -59,12 +68,13 @@ test("basic проксирует выбранные сервисы, осталь
   const result = buildV2rayBasic({
     direct: ["DOMAIN-SUFFIX,direct.example"],
     proxy: ["DOMAIN-SUFFIX,proxy.example", "IP-CIDR,192.0.2.0/24"],
+    ads: ["DOMAIN-SUFFIX,ads.example"],
   });
 
   assert.equal(result.at(-1).outboundTag, "direct");
   assert.equal(result.at(-1).port, "0-65535");
   assert.ok(result.some((entry) => entry.domain?.includes("domain:proxy.example")));
-  assertAdBlocking(result);
+  assertAdBlocking(result, "ads.example");
 });
 
 test("geo направляет российские адреса напрямую, остальное в прокси", () => {

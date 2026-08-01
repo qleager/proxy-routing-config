@@ -1,0 +1,6 @@
+# Additional advertising domains missing from upstream rule sets.
+# These rules are applied before proxy-routing rules in every public profile.
+DOMAIN-SUFFIX,pornbiz.com
+DOMAIN-SUFFIX,tjk-njk.com
+DOMAIN-SUFFIX,trafficfactory.com
+DOMAIN-SUFFIX,zline0.com

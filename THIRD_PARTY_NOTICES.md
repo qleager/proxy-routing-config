@@ -1,8 +1,8 @@
 # Third-party notices
 
-## AdvertisingLite for Shadowrocket
+## Advertising for Shadowrocket
 
-Generated Shadowrocket profiles reference the remote AdvertisingLite rule
+Generated Shadowrocket profiles reference the remote Advertising rule
 sets from
 [blackmatrix7/ios_rule_script](https://github.com/blackmatrix7/ios_rule_script),
 licensed under the GNU General Public License v2.0. The rule-set contents are
