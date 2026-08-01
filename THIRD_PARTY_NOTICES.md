@@ -1,5 +1,13 @@
 # Third-party notices
 
+## AdvertisingLite for Shadowrocket
+
+Generated Shadowrocket profiles reference the remote AdvertisingLite rule
+sets from
+[blackmatrix7/ios_rule_script](https://github.com/blackmatrix7/ios_rule_script),
+licensed under the GNU General Public License v2.0. The rule-set contents are
+downloaded directly by Shadowrocket and are not copied into this repository.
+
 ## Re:filter lists
 
 The generated blocked-domain and blocked-IP artifacts contain data obtained

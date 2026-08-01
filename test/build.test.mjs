@@ -14,6 +14,16 @@ import {
   toShadowrocketRule,
 } from "../scripts/build.mjs";
 
+function assertAdBlocking(result) {
+  assert.ok(
+    result.some(
+      (entry) =>
+        entry.outboundTag === "block" &&
+        entry.domain?.includes("geosite:category-ads-all"),
+    ),
+  );
+}
+
 test("убирает комментарии и пустые строки", () => {
   assert.deepEqual(meaningfulLines("# comment\n\n DOMAIN-SUFFIX,example.com \n"), [
     "DOMAIN-SUFFIX,example.com",
@@ -54,18 +64,21 @@ test("basic проксирует выбранные сервисы, осталь
   assert.equal(result.at(-1).outboundTag, "direct");
   assert.equal(result.at(-1).port, "0-65535");
   assert.ok(result.some((entry) => entry.domain?.includes("domain:proxy.example")));
+  assertAdBlocking(result);
 });
 
 test("geo направляет российские адреса напрямую, остальное в прокси", () => {
   const result = buildV2rayGeo({ direct: [] });
   assert.ok(result.some((entry) => entry.ip?.includes("geoip:ru")));
   assert.equal(result.at(-1).outboundTag, "proxy");
+  assertAdBlocking(result);
 });
 
 test("nonru проксирует российские домены, остальное напрямую", () => {
   const result = buildV2rayNonRu({ direct: [], proxy: [] });
   assert.ok(result.some((entry) => entry.domain?.includes("domain:ru")));
   assert.equal(result.at(-1).outboundTag, "direct");
+  assertAdBlocking(result);
 });
 
 test("normalizes and deduplicates blocked-resource sources", () => {
@@ -117,4 +130,5 @@ test("blocked proxies only blocked resources", () => {
   );
   assert.ok(result.some((entry) => entry.ip?.includes("198.51.100.0/24")));
   assert.equal(result.at(-1).outboundTag, "direct");
+  assertAdBlocking(result);
 });

@@ -4,6 +4,8 @@ import path from "node:path";
 
 const REPOSITORY = "qleager/proxy-routing-config";
 const RAW_ROOT = `https://raw.githubusercontent.com/${REPOSITORY}/main`;
+const SHADOWROCKET_AD_RULE_ROOT =
+  "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/AdvertisingLite";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const RULE_TYPES = new Set([
   "DOMAIN",
@@ -115,6 +117,16 @@ function privateNetworkEntry() {
   };
 }
 
+function adBlockingEntry() {
+  return {
+    port: "",
+    outboundTag: "block",
+    domain: ["geosite:category-ads-all"],
+    enabled: true,
+    remarks: "Advertising: blocked",
+  };
+}
+
 function finalEntry(outboundTag) {
   return {
     port: "0-65535",
@@ -135,6 +147,7 @@ export function buildV2rayBasic({ direct, proxy }) {
       "direct",
       collectRules(direct),
     ),
+    adBlockingEntry(),
     ...routingEntries("Выбранные сервисы", "proxy", collectRules(proxy)),
     finalEntry("direct"),
   ];
@@ -148,6 +161,7 @@ export function buildV2rayGeo({ direct }) {
       "direct",
       collectRules(direct),
     ),
+    adBlockingEntry(),
     {
       port: "",
       outboundTag: "direct",
@@ -173,6 +187,7 @@ export function buildV2rayNonRu({ direct, proxy }) {
       "direct",
       collectRules(direct),
     ),
+    adBlockingEntry(),
     ...routingEntries(
       "Российские домены",
       "proxy",
@@ -200,6 +215,7 @@ export function buildV2rayBlocked({
       "direct",
       collectRules(direct),
     ),
+    adBlockingEntry(),
     ...routingEntries(
       "Blocked resources",
       "proxy",
@@ -237,6 +253,9 @@ function renderShadowrocket({
     "[Rule]",
     "# Личные исключения имеют наивысший приоритет",
     ...direct.map((line) => toShadowrocketRule(line, "DIRECT")),
+    "# Блокировка рекламных и отслеживающих доменов",
+    `RULE-SET,${SHADOWROCKET_AD_RULE_ROOT}/AdvertisingLite.list,REJECT`,
+    `DOMAIN-SET,${SHADOWROCKET_AD_RULE_ROOT}/AdvertisingLite_Domain.list,REJECT`,
   ];
 
   if (mode === "basic") {
