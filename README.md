@@ -13,13 +13,6 @@ sources so the same proxy policy can be used across devices.
 | `geo` | Connects Russian domains and IP addresses directly and routes everything else through the proxy |
 | `nonru` | Routes Russian domains through the proxy and connects everything else directly |
 
-Every profile blocks known advertising and tracking domains. Shadowrocket uses
-the remote Advertising rule set, while v2rayN uses its built-in
-`geosite:category-ads-all` data with the `block` outbound.
-
-This is domain-level filtering. It cannot remove advertisements served from
-the same domain as the page itself or advertisements embedded into video.
-
 ## Shadowrocket
 
 Use the `blocked` profile to proxy only blocked or restricted resources:
@@ -70,13 +63,8 @@ imported URL may need to be done manually, depending on the client version.
 - `custom/proxy.list` contains personal proxy rules.
 - `custom/direct.list` contains personal direct-connection exceptions.
 - `source/general.conf` contains shared Shadowrocket settings.
-- `source/ad-block.list` contains additional advertising domains missing from
-  upstream rule sets.
-- Shadowrocket ad blocking uses the maintained Advertising lists from
-  `blackmatrix7/ios_rule_script`; v2rayN uses `geosite:category-ads-all`.
 
-User-defined `DIRECT` rules are evaluated before advertising and generated
-proxy rules, so they can be used to allow a domain blocked by mistake.
+User-defined `DIRECT` rules are evaluated before generated proxy rules.
 
 Supported rule syntax:
 

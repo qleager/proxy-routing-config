@@ -4,8 +4,6 @@ import path from "node:path";
 
 const REPOSITORY = "qleager/proxy-routing-config";
 const RAW_ROOT = `https://raw.githubusercontent.com/${REPOSITORY}/main`;
-const SHADOWROCKET_AD_RULE_ROOT =
-  "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Advertising";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const RULE_TYPES = new Set([
   "DOMAIN",
@@ -117,19 +115,6 @@ function privateNetworkEntry() {
   };
 }
 
-function adBlockingEntry(overrides = []) {
-  const rules = collectRules(overrides);
-  const entry = {
-    port: "",
-    outboundTag: "block",
-    domain: ["geosite:category-ads-all", ...rules.domains],
-    enabled: true,
-    remarks: "Advertising: blocked",
-  };
-  if (rules.ips.length) entry.ip = rules.ips;
-  return entry;
-}
-
 function finalEntry(outboundTag) {
   return {
     port: "0-65535",
@@ -142,7 +127,7 @@ function finalEntry(outboundTag) {
   };
 }
 
-export function buildV2rayBasic({ direct, proxy, ads = [] }) {
+export function buildV2rayBasic({ direct, proxy }) {
   return [
     privateNetworkEntry(),
     ...routingEntries(
@@ -150,13 +135,12 @@ export function buildV2rayBasic({ direct, proxy, ads = [] }) {
       "direct",
       collectRules(direct),
     ),
-    adBlockingEntry(ads),
     ...routingEntries("Выбранные сервисы", "proxy", collectRules(proxy)),
     finalEntry("direct"),
   ];
 }
 
-export function buildV2rayGeo({ direct, ads = [] }) {
+export function buildV2rayGeo({ direct }) {
   return [
     privateNetworkEntry(),
     ...routingEntries(
@@ -164,7 +148,6 @@ export function buildV2rayGeo({ direct, ads = [] }) {
       "direct",
       collectRules(direct),
     ),
-    adBlockingEntry(ads),
     {
       port: "",
       outboundTag: "direct",
@@ -177,7 +160,7 @@ export function buildV2rayGeo({ direct, ads = [] }) {
   ];
 }
 
-export function buildV2rayNonRu({ direct, proxy, ads = [] }) {
+export function buildV2rayNonRu({ direct, proxy }) {
   const russianRules = [
     "DOMAIN-SUFFIX,ru",
     "DOMAIN-SUFFIX,su",
@@ -190,7 +173,6 @@ export function buildV2rayNonRu({ direct, proxy, ads = [] }) {
       "direct",
       collectRules(direct),
     ),
-    adBlockingEntry(ads),
     ...routingEntries(
       "Российские домены",
       "proxy",
@@ -210,7 +192,6 @@ export function buildV2rayBlocked({
   blockedDomains,
   blockedIps,
   overrides = [],
-  ads = [],
 }) {
   return [
     privateNetworkEntry(),
@@ -219,7 +200,6 @@ export function buildV2rayBlocked({
       "direct",
       collectRules(direct),
     ),
-    adBlockingEntry(ads),
     ...routingEntries(
       "Blocked resources",
       "proxy",
@@ -249,7 +229,6 @@ function renderShadowrocket({
   general,
   outputName,
   direct,
-  ads,
   mode,
 }) {
   const lines = [
@@ -258,10 +237,6 @@ function renderShadowrocket({
     "[Rule]",
     "# Личные исключения имеют наивысший приоритет",
     ...direct.map((line) => toShadowrocketRule(line, "DIRECT")),
-    "# Блокировка рекламных и отслеживающих доменов",
-    ...ads.map((line) => toShadowrocketRule(line, "REJECT")),
-    `RULE-SET,${SHADOWROCKET_AD_RULE_ROOT}/Advertising.list,REJECT`,
-    `DOMAIN-SET,${SHADOWROCKET_AD_RULE_ROOT}/Advertising_Domain.list,REJECT`,
   ];
 
   if (mode === "basic") {
@@ -415,7 +390,6 @@ async function main() {
     sourceProxyText,
     customDirectText,
     customProxyText,
-    adBlockText,
     blockedSourcesText,
     blockedOverridesText,
   ] =
@@ -424,7 +398,6 @@ async function main() {
       readFile(path.join(ROOT, "source/proxy.list"), "utf8"),
       readFile(path.join(ROOT, "custom/direct.list"), "utf8"),
       readFile(path.join(ROOT, "custom/proxy.list"), "utf8"),
-      readFile(path.join(ROOT, "source/ad-block.list"), "utf8"),
       readFile(path.join(ROOT, "source/blocked-sources.json"), "utf8"),
       readFile(path.join(ROOT, "source/blocked-overrides.list"), "utf8"),
     ]);
@@ -432,9 +405,8 @@ async function main() {
   const sourceProxy = meaningfulLines(sourceProxyText);
   const customDirect = meaningfulLines(customDirectText);
   const customProxy = meaningfulLines(customProxyText);
-  const adBlock = meaningfulLines(adBlockText);
   const allProxy = unique([...sourceProxy, ...customProxy]);
-  validateRules([...customDirect, ...allProxy, ...adBlock]);
+  validateRules([...customDirect, ...allProxy]);
   const blockedSources = JSON.parse(blockedSourcesText);
   const [blockedDomainTexts, blockedIpTexts, v2flyDomainTexts] =
     await Promise.all([
@@ -457,47 +429,40 @@ async function main() {
     general,
     outputName: "shadowrocket.conf",
     direct: customDirect,
-    ads: adBlock,
     mode: "basic",
   });
   const shadowrocketGeo = renderShadowrocket({
     general,
     outputName: "shadowrocket-geo.conf",
     direct: customDirect,
-    ads: adBlock,
     mode: "geo",
   });
   const shadowrocketNonRu = renderShadowrocket({
     general,
     outputName: "shadowrocket-nonru.conf",
     direct: customDirect,
-    ads: adBlock,
     mode: "nonru",
   });
   const shadowrocketBlocked = renderShadowrocket({
     general,
     outputName: "shadowrocket-blocked.conf",
     direct: customDirect,
-    ads: adBlock,
     mode: "blocked",
   });
   const v2rayBasic = buildV2rayBasic({
     direct: customDirect,
     proxy: allProxy,
-    ads: adBlock,
   });
-  const v2rayGeo = buildV2rayGeo({ direct: customDirect, ads: adBlock });
+  const v2rayGeo = buildV2rayGeo({ direct: customDirect });
   const v2rayNonRu = buildV2rayNonRu({
     direct: customDirect,
     proxy: allProxy,
-    ads: adBlock,
   });
   const v2rayBlocked = buildV2rayBlocked({
     direct: customDirect,
     blockedDomains,
     blockedIps,
     overrides: blockedOverrides,
-    ads: adBlock,
   });
 
   const dist = path.join(ROOT, "dist");
